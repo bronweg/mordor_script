@@ -28,7 +28,7 @@ fi
 make_ext4() {		# Making ext4 file system
 echo "Making ext4 file system on all disks except of OS disk"
 exit_status=0
-for disk in ${disks_to_create_fs}; do mke2fs -F -t ext4 -L ${disk_label} ${mkfs_param} /dev/${disk}; expr $exit_status + $?; done
+for disk in ${disks_to_create_fs}; do mke2fs -F -t ext4 -L ${disk_label} ${mkfs_param} /dev/${disk}; exit_status=$(expr $exit_status + $?); done
 if [[ $exit_status -eq 0 ]]; then
 	echo -e "New file systems created on below list of disks\n${disks_to_create_fs}"
 else
