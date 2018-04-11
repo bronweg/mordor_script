@@ -216,13 +216,12 @@ fi
 }
 
 help_func() {
-echo "This script will check and fix nodes environment according to 'Mordor' document of HortonWorks"
-echo -e "Author:\tUlis Ilya (ulis.ilya@gmail.com)\nCorrector:\tAlex Neishtoot (alexne@matrixbi.co.il)"
-echo
-$0 [--help|--dn|--master|--edge|--all|--manual {list of functions delimited by space}]
+echo -e "\nThis script will check and fix nodes environment according to 'Mordor' document of HortonWorks"
+echo -e "Author:\t\tUlis Ilya (ulis.ilya@gmail.com)\nCorrector:\tAlex Neishtoot (alexne@matrixbi.co.il)"
+echo -e "\n$0 [--help|--dn|--master|--edge|--all|--manual {list of functions delimited by space}]"
 }
 
-declare_nodes() {
+declare_nodes() {		#Experimental function, please don't use it.
 ambari=(shzambari01)
 masters=(shzmst01 shzmst02 shzmst03)
 workers=(shzdn01 shzdn02 shzdn03 shzdn04 shzdn05)
@@ -341,6 +340,7 @@ while [[ $# -gt 0 ]]; do
 			;;
 		--help)
 			help_func
+			exit 0
 			;;
 		*)
 			echo "ERROR! Wrong argument."
