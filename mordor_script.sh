@@ -105,7 +105,7 @@ esac
 #disks_to_work_on=$(bootvg=$(df | grep -w \/boot$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^sd[a-z] | grep -v ${bootvg%%[0-9]} | awk '{print $1}')
 #disks_to_work_on=$(bootvg=$(df | grep -w \/$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 bootvg=$(lsblk -i | awk -v LVDEV=$(basename $(df / | grep / | awk '{print $1}')) '$1 ~ /^[^|`]/ {LASTDEV=$1} index($1, LVDEV) > 0 {print LASTDEV}')
-disk_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}'))
+disk_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 #disks_to_create_fs=$(lsblk -f | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | awk -v disk_label="$disk_label" '$3 != disk_label {print $1}')
 disks_to_create_fs=$(lsblk -b -o NAME,LABEL,SIZE | tail -n +2 | awk '{print $NF"\t"$0}' | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | sort -k 1.1nr -k 2.1 | awk -v disk_label="$disk_label" '$3 != disk_label {print $2}')
 make_ext4
@@ -207,13 +207,23 @@ echo "echo never > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.local
 echo "echo never > /sys/kernel/mm/transparent_hugepage/defrag" >> /etc/rc.local
 }
 
-check_ntp() {
+#check_ntp() {
+#if [[ -z $(ntpstat | grep synchronised) ]]; then
+#	echo "ERROR! NTP isn't synchronised"
+#	echo "Please fix the NTP connection manually"
+#else
+#	echo "NTP check successfully passed."
+#fi
+#}
 
-if [[ -z $(ntpstat | grep synchronised) ]]; then
-	echo "ERROR! NTP isn't synchronised"
-	echo "Please fix the NTP connection manually"
+check_ntp() {
+if [[ -n $(ntpq -np | grep '^\*') ]]; then
+	echo "ntpd service successfully synchronized to $(ntpq -np | grep '^\*' | awk '{print $1}' | tr -d \*)"
+elif [[ $(chronyc sources | grep '^.\*') ]]; then
+	echo "chrony service successfully synchronized to $(chronyc sources | grep '^.\*' | awk '{print $2}')"
 else
-	echo "NTP check successfully passed."
+	echo "ERROR! NTP isn't synchronised (neither ntpd nor chrony)"
+	echo "Please fix the NTP connection manually"
 fi
 }
 
