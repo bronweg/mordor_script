@@ -103,7 +103,9 @@ case $1 in
 		;;
 esac
 #disks_to_work_on=$(bootvg=$(df | grep -w \/boot$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^sd[a-z] | grep -v ${bootvg%%[0-9]} | awk '{print $1}')
-disks_to_work_on=$(bootvg=$(df | grep -w \/$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
+#disks_to_work_on=$(bootvg=$(df | grep -w \/$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
+bootvg=$(lsblk -i | awk -v LVDEV=$(basename $(df / | grep / | awk '{print $1}')) '$1 ~ /^[^|`]/ {LASTDEV=$1} index($1, LVDEV) > 0 {print LASTDEV}')
+disk_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}'))
 #disks_to_create_fs=$(lsblk -f | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | awk -v disk_label="$disk_label" '$3 != disk_label {print $1}')
 disks_to_create_fs=$(lsblk -b -o NAME,LABEL,SIZE | tail -n +2 | awk '{print $NF"\t"$0}' | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | sort -k 1.1nr -k 2.1 | awk -v disk_label="$disk_label" '$3 != disk_label {print $2}')
 make_ext4
