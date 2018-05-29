@@ -217,9 +217,9 @@ echo "echo never > /sys/kernel/mm/transparent_hugepage/defrag" >> /etc/rc.local
 #}
 
 check_ntp() {
-if [[ -n $(ntpq -np | grep '^\*') ]]; then
+if [[ -n $(ntpq -np 2> /dev/null | grep '^\*') ]]; then
 	echo "ntpd service successfully synchronized to $(ntpq -np | grep '^\*' | awk '{print $1}' | tr -d \*)"
-elif [[ $(chronyc sources | grep '^.\*') ]]; then
+elif [[ $(chronyc sources 2> /dev/null | grep '^.\*') ]]; then
 	echo "chrony service successfully synchronized to $(chronyc sources | grep '^.\*' | awk '{print $2}')"
 else
 	echo "ERROR! NTP isn't synchronised (neither ntpd nor chrony)"
