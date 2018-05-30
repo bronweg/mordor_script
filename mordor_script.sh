@@ -39,17 +39,27 @@ fi
 mount_fs() {		# Updating /etc/fstab file, creating mount point directories in /data/ folder, mounting data file systems.
 counter=0
 #last_mnt=1
+disk_num=0
+
 for disk in ${disks_to_create_fs}; do
-	if [[ ${mntpnt_prfx[${counter}]} ]]; then
+	if [[ $(amount=$(basename ${mntpnt_prfx[${counter}]}_amount) && echo ${!amount}) ]]; then
 		prefix=${mntpnt_prfx[${counter}]}
-		disk_num=1
-	else
-		#prefix=$(echo ${mntpnt_prfx[@]} | awk '{print $NF}')
-		prefix=${mntpnt_prfx[-1]}
-		#last=true
 		disk_num=$(expr $disk_num + 1)
+		if [[ ${disk_num} -lt ${!amount} ]]; then :; else counter=$(expr $counter + 1); fi
+	else
+		if [[ ${mntpnt_prfx[${counter}]} ]]; then
+			prefix=${mntpnt_prfx[${counter}]}
+			disk_num=1
+		else
+			#prefix=$(echo ${mntpnt_prfx[@]} | awk '{print $NF}')
+			prefix=${mntpnt_prfx[-1]}
+			#last=true
+			disk_num=$(expr $disk_num + 1)
+		fi
+		counter=$(expr $counter + 1)
 	fi
-	counter=$(expr $counter + 1)
+	
+	#counter=$(expr $counter + 1)
 	disk_num=$(printf %02d $disk_num)
 	#counter=$(printf %02d $counter)
 	if [[ -z $(grep -w "/dev/${disk}" /etc/fstab) ]]; then
@@ -79,6 +89,15 @@ case $1 in
 		mnt_opts="defaults,inode_readahead_blks=128,data=writeback,noatime,nodev,nobarrier"
 		prepare_ext4
 		;;
+	--kudu)
+		role="dn"
+		disk_label="HDFS"
+		mkfs_param="-T hdfs"
+		mntpnt_prfx=("/data/kudu" "/data/dn")
+		mnt_opts="defaults,inode_readahead_blks=128,data=writeback,noatime,nodev,nobarrier"
+		kudu_amount=$2
+		prepare_ext4
+		;;
 	--master) #Include ambari node
 		role="master"
 		disk_label="GRID"
@@ -98,14 +117,14 @@ case $1 in
 		mnt_opts="defaults,noatime,nodev,nobarrier"
 		;;
 	*)
-		echo "ERROR! You should provide one argument [--dn|--master|--kafka|--edge] to $0 function. Exiting"
+		echo "ERROR! You should provide argument [ --dn | --kudu {NUM of disks} | --master | --kafka | --edge ] to $0 function. Exiting"
 		exit 1
 		;;
 esac
 #disks_to_work_on=$(bootvg=$(df | grep -w \/boot$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^sd[a-z] | grep -v ${bootvg%%[0-9]} | awk '{print $1}')
 #disks_to_work_on=$(bootvg=$(df | grep -w \/$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 bootvg=$(lsblk -i | awk -v LVDEV=$(basename $(df / | grep / | awk '{print $1}')) '$1 ~ /^[^|`]/ {LASTDEV=$1} index($1, LVDEV) > 0 {print LASTDEV}')
-disk_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
+disks_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 #disks_to_create_fs=$(lsblk -f | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | awk -v disk_label="$disk_label" '$3 != disk_label {print $1}')
 disks_to_create_fs=$(lsblk -b -o NAME,LABEL,SIZE | tail -n +2 | awk '{print $NF"\t"$0}' | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | sort -k 1.1nr -k 2.1 | awk -v disk_label="$disk_label" '$3 != disk_label {print $2}')
 make_ext4
@@ -291,6 +310,24 @@ while [[ $# -gt 0 ]]; do
             		os_tuning
             		transparent_huge_page
             		check_ntp
+			;;
+		--kudu)
+			echo "The script will run kudu functions"
+			shift
+			alike_num='^[1-9][0-9]*$'
+			if [[ $1 =~ ${alike_num} ]]; then
+				disk_operations --kudu $1
+				shift
+			else
+				echo "ERROR! You should provide amount of disks to create to '--kudu' argument."
+				exit 1
+			fi
+			grub
+			block_device_optimization
+			tso_config
+			os_tuning
+			transparent_huge_page
+			check_ntp
 			;;
 		--kms)
 			echo "The script will run kms functions"
