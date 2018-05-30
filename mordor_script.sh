@@ -43,6 +43,7 @@ disk_num=0
 
 for disk in ${disks_to_create_fs}; do
 	if [[ $(amount=$(basename ${mntpnt_prfx[${counter}]}_amount) && echo ${!amount}) ]]; then
+		amount=$(basename ${mntpnt_prfx[${counter}]}_amount)
 		prefix=${mntpnt_prfx[${counter}]}
 		disk_num=$(expr $disk_num + 1)
 		if [[ ${disk_num} -lt ${!amount} ]]; then :; else counter=$(expr $counter + 1); fi
@@ -124,7 +125,8 @@ esac
 #disks_to_work_on=$(bootvg=$(df | grep -w \/boot$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^sd[a-z] | grep -v ${bootvg%%[0-9]} | awk '{print $1}')
 #disks_to_work_on=$(bootvg=$(df | grep -w \/$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 bootvg=$(lsblk -i | awk -v LVDEV=$(basename $(df / | grep / | awk '{print $1}')) '$1 ~ /^[^|`]/ {LASTDEV=$1} index($1, LVDEV) > 0 {print LASTDEV}')
-disks_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
+#disks_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
+disks_to_work_on=$(lsblk | grep ^${bootvg%%[a-z]} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 #disks_to_create_fs=$(lsblk -f | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | awk -v disk_label="$disk_label" '$3 != disk_label {print $1}')
 disks_to_create_fs=$(lsblk -b -o NAME,LABEL,SIZE | tail -n +2 | awk '{print $NF"\t"$0}' | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | sort -k 1.1nr -k 2.1 | awk -v disk_label="$disk_label" '$3 != disk_label {print $2}')
 make_ext4
@@ -374,9 +376,16 @@ while [[ $# -gt 0 ]]; do
 			while [[ -n $1 ]]; do
 				(( counter++ ))
 				if [[ $1 == "disk_operations" ]]; then
-					func[${counter}]="$1 $2"
-					shift
-					shift
+					if [[ $2 == "--kudu" ]]; then
+					        func[${counter}]="$1 $2 $3"
+						shift
+						shift
+						shift
+					else
+						func[${counter}]="$1 $2"
+						shift
+						shift
+					fi
 				else
 					func[${counter}]=$1
 					shift
