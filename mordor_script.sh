@@ -99,6 +99,12 @@ case $1 in
 		kudu_amount=$2
 		prepare_ext4
 		;;
+	--utility)
+		role="master"
+                disk_label="GRID"
+		mntpnt_prfx=("/data/logs")
+                mnt_opts="defaults,noatime,nodev,nobarrier"
+		;;
 	--master) #Include ambari node
 		role="master"
 		disk_label="GRID"
@@ -251,19 +257,20 @@ fi
 help_func() {
 echo -e "\nThis script will check and fix nodes environment according to 'Mordor' document of HortonWorks"
 echo -e "Author:\t\tUlis Ilya (ulis.ilya@gmail.com)\nCorrector:\tAlex Neishtoot (alexne@matrixbi.co.il)"
-echo -e "\n$0 [--help|--dn|--master|--edge|--all|--manual {list of functions delimited by space}]"
+echo -e "\n$0 [--help|--dn|--master|--ambari|--edge|--kudu|--kms|--knox|--kafka|--all|--manual {list of functions delimited by space}]"
 }
 
 declare_nodes() {		#Experimental function, please don't use it.
-ambari=(shzambari01)
-masters=(shzmst01 shzmst02 shzmst03)
-workers=(shzdn01 shzdn02 shzdn03 shzdn04 shzdn05)
-edges=(shzedge01)
-kms=(shzkms01)
-kafka=(shzkafka01)
-knox=(shzknox01)
-airflow=(shzaff01)
-all_nodes=(${ambari[@]} ${masters[@]} ${workers[@]} ${edges[@]} ${kms[@]} ${kafka[@]} ${knox[@]} ${airflow[@]})
+ambari=(ambari01)
+masters=(mst01 mst02 mst03)
+workers=(dn01 dn02 dn03 dn04 dn05)
+edges=(edge01)
+kudu=(kudu01)
+kms=(kms01)
+knox=(knox01)
+kafka=(kafka01)
+airflow=(aff01)
+all_nodes=(${ambari[@]} ${masters[@]} ${workers[@]} ${edges[@]} ${kudu[@]} ${kms[@]} ${knox[@]} ${kafka[@]} ${airflow[@]})
 }
 
 script_arguments() {
@@ -297,7 +304,7 @@ while [[ $# -gt 0 ]]; do
 			echo "The script will run ambari functions"
 			shift
 			grub
-			disk_operations --master
+			disk_operations --utility
             		tso_config
             		os_tuning
             		transparent_huge_page
