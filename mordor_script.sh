@@ -99,6 +99,12 @@ case $1 in
 		kudu_amount=$2
 		prepare_ext4
 		;;
+	--db)
+		role="master"
+                disk_label="GRID"
+		mntpnt_prfx=("/data/db")
+                mnt_opts="defaults,noatime,nodev,nobarrier"
+		;;
 	--utility)
 		role="master"
                 disk_label="GRID"
@@ -124,7 +130,7 @@ case $1 in
 		mnt_opts="defaults,noatime,nodev,nobarrier"
 		;;
 	*)
-		echo "ERROR! You should provide argument [ --dn | --kudu {NUM of disks} | --master | --kafka | --edge ] to $0 function. Exiting"
+		echo "ERROR! You should provide argument [ --dn | --kudu {NUM of disks} | --db | --utility | --master | --kafka | --edge ] to $0 function. Exiting"
 		exit 1
 		;;
 esac
@@ -257,20 +263,19 @@ fi
 help_func() {
 echo -e "\nThis script will check and fix nodes environment according to 'Mordor' document of HortonWorks"
 echo -e "Author:\t\tUlis Ilya (ulis.ilya@gmail.com)\nCorrector:\tAlex Neishtoot (alexne@matrixbi.co.il)"
-echo -e "\n$0 [--help|--dn|--master|--ambari|--edge|--kudu|--kms|--knox|--kafka|--all|--manual {list of functions delimited by space}]"
+echo -e "\n$0 [--help|--dn|--master|--db|--ambari|--edge|--kudu {NUM of disks}|--kms|--knox|--kafka|--all|--manual {list of functions delimited by space}]"
 }
 
 declare_nodes() {		#Experimental function, please don't use it.
-ambari=(ambari01)
-masters=(mst01 mst02 mst03)
-workers=(dn01 dn02 dn03 dn04 dn05)
-edges=(edge01)
-kudu=(kudu01)
-kms=(kms01)
-knox=(knox01)
-kafka=(kafka01)
-airflow=(aff01)
-all_nodes=(${ambari[@]} ${masters[@]} ${workers[@]} ${edges[@]} ${kudu[@]} ${kms[@]} ${knox[@]} ${kafka[@]} ${airflow[@]})
+ambari=(shzambari01)
+masters=(shzmst01 shzmst02 shzmst03)
+workers=(shzdn01 shzdn02 shzdn03 shzdn04 shzdn05)
+edges=(shzedge01)
+kms=(shzkms01)
+kafka=(shzkafka01)
+knox=(shzknox01)
+airflow=(shzaff01)
+all_nodes=(${ambari[@]} ${masters[@]} ${workers[@]} ${edges[@]} ${kms[@]} ${kafka[@]} ${knox[@]} ${airflow[@]})
 }
 
 script_arguments() {
@@ -299,6 +304,16 @@ while [[ $# -gt 0 ]]; do
 			os_tuning
 			transparent_huge_page
 			check_ntp
+			;;
+		--db)
+			echo "The script will run ambari functions"
+			shift
+			grub
+			disk_operations --db
+            		tso_config
+            		os_tuning
+            		transparent_huge_page
+            		check_ntp
 			;;
 		--ambari)
 			echo "The script will run ambari functions"
