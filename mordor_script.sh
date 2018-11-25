@@ -1,4 +1,5 @@
 #!/bin/bash
+# test comment
 
 grub() {		# Update GRUB. Enforce deadline scheduler argument
 echo "GRUB will be updated with elevator=deadline argument"
