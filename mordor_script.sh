@@ -39,7 +39,6 @@ fi
 
 mount_fs() {		# Updating /etc/fstab file, creating mount point directories in /data/ folder, mounting data file systems.
 counter=0
-#last_mnt=1
 disk_num=0
 
 for disk in ${disks_to_create_fs}; do
@@ -53,17 +52,13 @@ for disk in ${disks_to_create_fs}; do
 			prefix=${mntpnt_prfx[${counter}]}
 			disk_num=1
 		else
-			#prefix=$(echo ${mntpnt_prfx[@]} | awk '{print $NF}')
 			prefix=${mntpnt_prfx[-1]}
-			#last=true
 			disk_num=$(expr $disk_num + 1)
 		fi
 		counter=$(expr $counter + 1)
 	fi
 	
-	#counter=$(expr $counter + 1)
 	disk_num=$(printf %02d $disk_num)
-	#counter=$(printf %02d $counter)
 	if [[ -z $(grep -w "/dev/${disk}" /etc/fstab) ]]; then
 		echo "/dev/${disk} mountpoint will be mounted to ${prefix}${disk_num} folder"
 		echo -e "/dev/${disk}\t${prefix}${disk_num}\text4\t${mnt_opts}\t1 1" >> /etc/fstab
@@ -135,12 +130,8 @@ case $1 in
 		exit 1
 		;;
 esac
-#disks_to_work_on=$(bootvg=$(df | grep -w \/boot$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^sd[a-z] | grep -v ${bootvg%%[0-9]} | awk '{print $1}')
-#disks_to_work_on=$(bootvg=$(df | grep -w \/$ | awk '{print $1}') && bootvg=${bootvg##/dev/} && lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 bootvg=$(lsblk -i | awk -v LVDEV=$(basename $(df / | grep / | awk '{print $1}')) '$1 ~ /^[^|`]/ {LASTDEV=$1} index($1, LVDEV) > 0 {print LASTDEV}')
-#disks_to_work_on=$(lsblk | grep ^${bootvg%%[a-z][0-9]*} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
 disks_to_work_on=$(lsblk | grep ^${bootvg%%[a-z]} | grep -v ${bootvg%%[0-9]*} | awk '{print $1}')
-#disks_to_create_fs=$(lsblk -f | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | awk -v disk_label="$disk_label" '$3 != disk_label {print $1}')
 disks_to_create_fs=$(lsblk -b -o NAME,LABEL,SIZE | tail -n +2 | awk '{print $NF"\t"$0}' | egrep $(echo $disks_to_work_on | sed "s/ /|/g") | sort -k 1.1nr -k 2.1 | awk -v disk_label="$disk_label" '$3 != disk_label {print $2}')
 make_ext4
 mount_fs
@@ -241,15 +232,6 @@ echo "echo never > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.local
 echo "echo never > /sys/kernel/mm/transparent_hugepage/defrag" >> /etc/rc.local
 }
 
-#check_ntp() {
-#if [[ -z $(ntpstat | grep synchronised) ]]; then
-#	echo "ERROR! NTP isn't synchronised"
-#	echo "Please fix the NTP connection manually"
-#else
-#	echo "NTP check successfully passed."
-#fi
-#}
-
 check_ntp() {
 if [[ -n $(ntpq -np 2> /dev/null | grep '^\*') ]]; then
 	echo "ntpd service successfully synchronized to $(ntpq -np | grep '^\*' | awk '{print $1}' | tr -d \*)"
@@ -268,14 +250,14 @@ echo -e "\n$0 [--help|--dn|--master|--db|--ambari|--edge|--kudu {NUM of disks}|-
 }
 
 declare_nodes() {		#Experimental function, please don't use it.
-ambari=(shzambari01)
-masters=(shzmst01 shzmst02 shzmst03)
-workers=(shzdn01 shzdn02 shzdn03 shzdn04 shzdn05)
-edges=(shzedge01)
-kms=(shzkms01)
-kafka=(shzkafka01)
-knox=(shzknox01)
-airflow=(shzaff01)
+ambari=(ambari01)
+masters=(mst01 mst02 mst03)
+workers=(dn01 dn02 dn03 dn04 dn05)
+edges=(edge01)
+kms=(kms01)
+kafka=(kafka01)
+knox=(knox01)
+airflow=(aff01)
 all_nodes=(${ambari[@]} ${masters[@]} ${workers[@]} ${edges[@]} ${kms[@]} ${kafka[@]} ${knox[@]} ${airflow[@]})
 }
 
@@ -286,9 +268,6 @@ while [[ $# -gt 0 ]]; do
 			echo "The script will run data node functions"
 			shift
 			grub
-			#prepare_ext4
-			#make_ext4
-			#mount_hdfs
 			disk_operations --dn
 			block_device_optimization
 			tso_config
