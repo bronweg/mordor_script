@@ -1,0 +1,27 @@
+- name: copy mordor_script
+  copy:
+    src: mordor_script.sh
+    dest: /home/dba/mordor_script.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: run mordor_script on utility nodes
+  shell: /home/dba/mordor_script.sh --ambari
+  when: "'UTILITY' in group_names"
+
+- name: run mordor_script on master nodes
+  shell: /home/dba/mordor_script.sh --master
+  when: "'HDP-MASTER' in group_names"
+
+- name: run mordor_script on data nodes
+  shell: /home/dba/mordor_script.sh --dn
+  when: "'HDP-DATA' in group_names"
+
+- name: run mordor_script on edge nodes
+  shell: /home/dba/mordor_script.sh --edge
+  when: "'EDGE' in group_names"
+
+- name: run mordor_script on db nodes
+  shell: /home/dba/mordor_script.sh --db
+  when: "'POSTGRES' in group_names"
